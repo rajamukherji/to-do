@@ -1,0 +1,85 @@
+MOD Main;
+
+IMP Gir USE Gtk, GLib, GObject;
+
+DEF Run() (
+	VAR window <- Gtk.Window.New(Gtk.WindowType.Toplevel);
+	VAR header <- Gtk.HeaderBar.New();
+	header:set_show_close_button(:true);
+
+	VAR todos_store <- Gtk.ListStore.Newv([
+		GObject.Type.STRING, -- Raw description
+		GObject.Type.STRING, -- Formatted description for display
+		GObject.Type.STRING, -- Priority
+		GObject.Type.STRING  -- Due date
+	]);
+
+	VAR todos_view <- Gtk.TreeView.NewWithModel(todos_store);
+
+	VAR priorities_store <- Gtk.ListStore.Newv([
+		GObject.Type.STRING
+	]);
+
+	WITH column <- Gtk.TreeViewColumn.New() DO (
+		VAR renderer <- Gtk.CellRendererToggle.New();
+		renderer:set_property("activatable", :true);
+		column:pack_start(renderer, :false);
+		todos_view:append_column(column);
+	);
+	WITH column <- Gtk.TreeViewColumn.New() DO (
+		column:set_title("Due");
+		VAR renderer <- Gtk.CellRendererText.New();
+		renderer:set_property("editable", :true);
+		column:pack_start(renderer, :false);
+		column:add_attribute(renderer, "text", 3);
+		todos_view:append_column(column);
+	);
+	WITH column <- Gtk.TreeViewColumn.New() DO (
+		column:set_title("Priority");
+		VAR renderer <- Gtk.CellRendererCombo.New();
+		renderer:set_property("editable", :true);
+		renderer:set_property("text-column", 0);
+		renderer:set_property("model", priorities_store);
+		column:pack_start(renderer, :false);
+		column:add_attribute(renderer, "text", 2);
+		todos_view:append_column(column);
+	);
+	WITH column <- Gtk.TreeViewColumn.New() DO (
+		column:set_title("Description");
+		VAR renderer <- Gtk.CellRendererText.New();
+		renderer:set_property("editable", :true);
+		column:pack_start(renderer, :true);
+		column:add_attribute(renderer, "markup", 1);
+		todos_view:append_column(column);
+	);
+
+	priorities_store:insert_with_valuesv(NIL, -1, [0], ["Low"]);
+	priorities_store:insert_with_valuesv(NIL, -1, [0], ["Medium"]);
+	priorities_store:insert_with_valuesv(NIL, -1, [0], ["High"]);
+	priorities_store:insert_with_valuesv(NIL, -1, [0], ["Critical"]);
+
+	todos_store:insert_with_valuesv(NIL, -1, [0, 1, 2, 3], ["Test task", "Test task", "Low", "1/1/2019"]);
+
+	VAR menu_button <- Gtk.MenuButton.New();
+	header:pack_start(menu_button);
+
+	VAR add_task_button <- Gtk.Button.NewFromIconName("list-add", Gtk.IconSize.Menu);
+	header:pack_start(add_task_button);
+
+	VAR search_entry <- Gtk.SearchEntry.New();
+	header:pack_end(search_entry);
+
+	header:set_title("Things To Do");
+
+	VAR scrolled_window <- Gtk.ScrolledWindow.New(Gtk.Adjustment.Nil, Gtk.Adjustment.Nil);
+	scrolled_window:add(todos_view);
+	window:add(scrolled_window);
+	window:set_titlebar(header);
+	window:show_all;
+	window:connect("destroy", Gtk.Main.MainQuit);
+	Gtk.Main.Main();
+);
+
+Run();
+
+END Main.
